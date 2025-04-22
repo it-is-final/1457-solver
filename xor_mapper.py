@@ -22,13 +22,8 @@ def normalise_input(input_str: str):
         ]).upper()
 
 
-def read_target_indexes(indexes: list[int] | None) -> set[int]:
-    target_indexes: set[int] = set()
-    if indexes is not None:
-        target_indexes.update(indexes)
-    else:
-        target_indexes.update(range(0, 1 << 16))
-    return target_indexes
+def read_target_indexes(indexes: list[int]) -> set[int]:
+    return set(indexes)
 
 
 def read_exclude_groups(eg_arg: list[str] | None):
@@ -99,7 +94,7 @@ def get_easy_chat_words(easy_chat_csv: Path):
 def calc_xor_combinations(
         easy_chat_data: dict[int, EasyChatEntry],
         exclude_indexes: set[int],
-        target_indexes: set[int]
+        filter_values: set[int]
         ):
     # The purpose of this scoretable is to facilitate
     # favouring some combination of easy chat words over
@@ -142,11 +137,12 @@ def calc_xor_combinations(
         if (w1_index in exclude_indexes
             or w2_index in exclude_indexes):
             continue
-        if xor_value not in target_indexes:
+        if xor_value not in filter_values:
             continue
         if xor_value in xor_map:
             cur_entry = xor_map[xor_value]
-            cur_score = sum((WORD_GROUP_SCORETABLE[w.group] for w in (easy_chat_data[i] for i in cur_entry)))
+            cur_score = sum((WORD_GROUP_SCORETABLE[w.group]
+                             for w in (easy_chat_data[i] for i in cur_entry)))
             new_score = sum((WORD_GROUP_SCORETABLE[w.group] for w in (w1, w2)))
             if new_score >= cur_score:
                 continue
@@ -186,16 +182,28 @@ def write_csv(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("easy_chat_data", type=Path)
-    parser.add_argument("-t", "--target-index", type=lambda x: int(x, 0), nargs='+')
-    parser.add_argument("-o", "--out", type=Path, default=(
-        CURRENT_FOLDER / "out.csv"
-    ))
-    parser.add_argument("--exclude-group", nargs='+')
-    parser.add_argument("--exclude-range", type=lambda x: int(x, 0), nargs='+')
+    parser.add_argument("easy_chat_data",
+                        type=Path,
+                        help="Path to csv with easy chat system words")
+    parser.add_argument("-o", "--out",
+                        type=Path,
+                        default=(CURRENT_FOLDER / "out.csv"),
+                        help="Output file path")
+    parser.add_argument("-f", "--filter-values",
+                        type=lambda x: int(x, 0),
+                        nargs='+',
+                        default=list(range(0, 1 << 16)),
+                        help="Filter xor map to these xor values only (leave blank to for unfiltered output)")
+    parser.add_argument("--exclude-group",
+                        nargs='+',
+                        help="Word groups to exclude from the xor map")
+    parser.add_argument("--exclude-range",
+                        type=lambda x: int(x, 0),
+                        nargs='+',
+                        help="Word indexes to exclude from the xor map")
     a = parser.parse_args()
     easy_chat_data = get_easy_chat_words(a.easy_chat_data)
-    target_index = read_target_indexes(a.target_index)
+    filter_values = read_target_indexes(a.filter_values)
     exclude_groups = read_exclude_groups(a.exclude_group)
     exclude_indexes = read_exclude_ranges(easy_chat_data=easy_chat_data,
                                           exclude_ranges=a.exclude_range,
@@ -203,7 +211,7 @@ def main():
     xor_map = calc_xor_combinations(
         easy_chat_data=easy_chat_data,
         exclude_indexes=exclude_indexes,
-        target_indexes=target_index
+        filter_values=filter_values
         )
     write_csv(a.out, xor_map, easy_chat_data)
 
