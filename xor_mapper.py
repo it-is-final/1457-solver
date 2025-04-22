@@ -124,7 +124,7 @@ def calc_xor_combinations(
         "TIME": 0,
         "MISC.": 0,
         "ADJECTIVES": 0,
-        "EVENTS": 0,
+        "EVENTS": 5,
         "MOVE 1": 5,
         "MOVE 2": 5,
         "POKéMON": 2,
