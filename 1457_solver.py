@@ -18,7 +18,7 @@ def build_round_1_map(xor_values: set[int]):
     for xor_value in sorted(xor_values):
         remainder = (0x10000 - (xor_value * 12)) & 0xFFFF
         for i in range(remainder, 0xC0000, 0x10000):
-            if ((i % 12) == 0 and (i // 12) in xor_values):
+            if (i % 12) == 0 and (i // 12) in xor_values and ((i // 12) & 0x4000 == 0):
                 checksum_map[xor_value] = i // 12
                 break
     return checksum_map
@@ -43,6 +43,8 @@ def calc_messages(target_species: int,
         target_checksum = (1 << 16) - key_high
         encrypted_item = key_high
         for new_key_high in xor_values:
+            if new_key_high & 0x4000 == 0x4000:
+                continue
             message = base_message.copy()
             checksum = (((target_species * 12)
                             + (new_key_high * 11)
