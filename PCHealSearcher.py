@@ -70,10 +70,9 @@ def get_round_2(
             2: calc_move_pp(move_pps[low1], pp_ups[2]),
             3: calc_move_pp(move_pps[high1], pp_ups[3]),
         }
-        pps_low = ((pps[1] << 8) | (pps[0] << 0))
-        pps_high = ((pps[3] << 8) | (pps[2] << 0))
-        checksum = ((low1 * 11) + (high1 * 11)
-                    + pps_low + pps_high)
+        pps_low = (pps[1] << 8) | (pps[0] << 0)
+        pps_high = (pps[3] << 8) | (pps[2] << 0)
+        checksum = (low1 * 11) + (high1 * 11) + pps_low + pps_high
         pps_low ^= low1
         pps_high ^= high1
         for low2 in key_lows:
